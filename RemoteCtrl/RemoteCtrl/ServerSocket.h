@@ -2,11 +2,30 @@
 #include "pch.h"
 #include "framework.h"
 
+#pragma pack(push)
+#pragma pack(1)
+
 class CPacket
 {
 public:
     // 默认构造函数
     CPacket() : sHead(0), nLength(0), sCmd(0), sSum(0) {}
+    // 构造函数：根据命令和数据创建包
+    CPacket(WORD nCmd, const BYTE* pData, size_t nSize) {
+        sHead = 0xFEFF;                    // 设置固定包头
+        nLength = nSize + 4;               // 包长度 = 数据长度 + 命令(2) + 校验和(2)
+        sCmd = nCmd;                       // 设置控制命令
+
+        // 拷贝数据到包中
+        strData.resize(nSize);
+        memcpy((void*)strData.c_str(), pData, nSize);
+
+        // 计算校验和
+        sSum = 0;
+        for (size_t j = 0; j < strData.size(); j++) {
+            sSum += (BYTE)strData[j] & 0xFF;
+        }
+    }
     // 拷贝构造函数
     CPacket(const CPacket& pack) {
         sHead = pack.sHead;
@@ -18,9 +37,9 @@ public:
     // 从字节数据构造包
     CPacket(const BYTE* pData, size_t& nSize) {
         size_t i = 0;
-        // 查找包头标识 0xFFFF
+        // 查找包头标识 0xFEFF
         for (; i < nSize; i++) {
-            if (*(WORD*)(pData + i) == 0xFFFF) {
+            if (*(WORD*)(pData + i) == 0xFEFF) {
                 sHead = *(WORD*)(pData + i);
                 i += 2;//让i越过包头
                 break;
@@ -79,15 +98,37 @@ public:
         }
         return *this;//这样可以连等了
     }
+    int Size() {
+        // 返回整个包数据的大小：包头(2) + 长度字段(4) + 包内容(nLength)
+        return nLength + 6;
+    }
+
+    const char* Data() {
+        strOut.resize(nLength + 6);           // 调整缓冲区大小以容纳整个包
+        BYTE* pData = (BYTE*)strOut.c_str();  // 获取缓冲区指针用于数据组装
+        
+        *(WORD*)pData = sHead;
+        pData += 2;
+        *(DWORD*)pData = nLength;
+        pData += 4;
+        *(WORD*)pData = sCmd;
+        pData += 2;
+        memcpy(pData, strData.c_str(), strData.size());
+        pData += strData.size();
+        *(WORD*)pData = sSum;
+
+        return strOut.c_str();                // 返回组装好的包数据
+    }
 
 public:
-    WORD sHead;        // 固定包头标识 0xFFFF
+    WORD sHead;        // 固定包头标识 0xFEFF
     DWORD nLength;     // 包长度（从控制命令开始，到和校验结束）
     WORD sCmd;         // 控制命令
     std::string strData; // 包数据
     WORD sSum;         // 和校验
+    std::string strOut; // 整个包的数据
 };
-
+#pragma pack(pop)
 
 // 服务器套接字类
 class CServerSocket
@@ -168,6 +209,11 @@ public:
         if (m_client == -1) return false;  // 检查客户端套接字是否有效
         return send(m_client, pData, nSize, 0) > 0;
     }
+    bool Send(CPacket& pack) {
+        if (m_client == -1) return false;  // 检查客户端套接字是否有效
+        return send(m_client, pack.Data(), pack.Size(), 0) > 0;
+    }
+
 private:
     SOCKET m_client;
     SOCKET m_sock;
