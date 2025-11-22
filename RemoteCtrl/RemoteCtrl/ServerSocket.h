@@ -2,6 +2,93 @@
 #include "pch.h"
 #include "framework.h"
 
+class CPacket
+{
+public:
+    // 默认构造函数
+    CPacket() : sHead(0), nLength(0), sCmd(0), sSum(0) {}
+    // 拷贝构造函数
+    CPacket(const CPacket& pack) {
+        sHead = pack.sHead;
+        nLength = pack.nLength;
+        sCmd = pack.sCmd;
+        strData = pack.strData;
+        sSum = pack.sSum;
+    }
+    // 从字节数据构造包
+    CPacket(const BYTE* pData, size_t& nSize) {
+        size_t i = 0;
+        // 查找包头标识 0xFFFF
+        for (; i < nSize; i++) {
+            if (*(WORD*)(pData + i) == 0xFFFF) {
+                sHead = *(WORD*)(pData + i);
+                i += 2;//让i越过包头
+                break;
+            }
+        }
+
+        if (i + 4 + 2 + 2 > nSize) {  // 包数据可能不全，或者包头未能全部接收到
+            nSize = 0;
+            return;
+        }
+
+        nLength = *(DWORD*)(pData + i);
+        i += 4;
+
+        if (nLength + i > nSize) {  // 包未完全接收到，就返回，解析失败
+            nSize = 0;
+            return;
+        }
+
+        sCmd = *(WORD*)(pData + i);
+        i += 2;
+
+        if (nLength > 4) {
+            // 解析数据部分（包长度减去命令字段和校验和字段）
+            strData.resize(nLength - 2 - 2);
+            memcpy((void*)strData.c_str(), pData + i, nLength - 4);
+            i += nLength - 4;
+        }
+
+        sSum = *(WORD*)(pData + i); 
+        i += 2;
+        // 计算数据的校验和
+        WORD sum = 0;
+        for (size_t j = 0; j < strData.size(); j++) {
+            sum += (BYTE)strData[j] & 0xFF; 
+        }
+
+        // 验证校验和
+        if (sum == sSum) {
+            nSize = i;  // 总包大小
+            return;
+        }
+
+        nSize = 0;  // 校验失败，返回0表示解析失败,大于0成功
+    }
+    ~CPacket(){}
+    //运算符重载
+    // 赋值运算符重载
+    CPacket& operator=(const CPacket& pack) {
+        if (this != &pack) {
+            sHead = pack.sHead;
+            nLength = pack.nLength;
+            sCmd = pack.sCmd;
+            strData = pack.strData;
+            sSum = pack.sSum;
+        }
+        return *this;//这样可以连等了
+    }
+
+public:
+    WORD sHead;        // 固定包头标识 0xFFFF
+    DWORD nLength;     // 包长度（从控制命令开始，到和校验结束）
+    WORD sCmd;         // 控制命令
+    std::string strData; // 包数据
+    WORD sSum;         // 和校验
+};
+
+
 // 服务器套接字类
 class CServerSocket
 {
@@ -51,16 +138,30 @@ public:
         //send(client, buffer, sizeof(buffer), 0);
 
     }
-    
+#define BUFFERSIZE 4096
     int DealCommand() {
-        char buffer[1024] = "";
+        if (m_client == -1) return -1;
+        char* buffer = new char[BUFFERSIZE];
+        memset(buffer, 0, BUFFERSIZE);
+        size_t index = 0;
         while (true) {
-            int len = recv(m_client, buffer, sizeof(buffer), 0);
+            //得到的长度
+            size_t len = recv(m_client, buffer + index, BUFFERSIZE - index, 0);
             if (len <= 0) {
                 return -1;
             }
-            //TODO:处理命令
+            index += len;
+            //使用的长度
+            len = index;
+            m_packet = CPacket((BYTE*)buffer, len);
+            if (len > 0) {
+                //解析成功
+                memmove(buffer, buffer + len, BUFFERSIZE - len);
+                index -= len;
+                return m_packet.sCmd;
+            }
         }
+        return -1;
     }
 
     bool Send(const char* pData, int nSize) {
@@ -70,6 +171,7 @@ public:
 private:
     SOCKET m_client;
     SOCKET m_sock;
+    CPacket m_packet;
     // 赋值运算符重载
     CServerSocket& operator=(const CServerSocket& ss) {}
     // 拷贝构造函数
