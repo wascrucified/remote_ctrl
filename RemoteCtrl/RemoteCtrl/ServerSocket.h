@@ -15,10 +15,14 @@ public:
         sHead = 0xFEFF;                    // 设置固定包头
         nLength = nSize + 4;               // 包长度 = 数据长度 + 命令(2) + 校验和(2)
         sCmd = nCmd;                       // 设置控制命令
-
-        // 拷贝数据到包中
-        strData.resize(nSize);
-        memcpy((void*)strData.c_str(), pData, nSize);
+        if (nSize > 0) {
+            // 拷贝数据到包中
+            strData.resize(nSize);
+            memcpy((void*)strData.c_str(), pData, nSize);
+        }
+        else {
+            strData.clear();
+        }
 
         // 计算校验和
         sSum = 0;
@@ -215,7 +219,7 @@ public:
     }
 
     bool GetFilePath(std::string& strPath) {
-        if (m_packet.sCmd == 2) {//2 代表选择获取文件列表功能的标识
+        if ((m_packet.sCmd >= 2) && (m_packet.sCmd <= 4)) {//2 代表选择获取文件列表功能的标识
             strPath = m_packet.strData;
             return true;
         }
