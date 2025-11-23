@@ -214,6 +214,14 @@ public:
         return send(m_client, pack.Data(), pack.Size(), 0) > 0;
     }
 
+    bool GetFilePath(std::string& strPath) {
+        if (m_packet.sCmd == 2) {//2 代表选择获取文件列表功能的标识
+            strPath = m_packet.strData;
+            return true;
+        }
+        return false;
+    }
+
 private:
     SOCKET m_client;
     SOCKET m_sock;
