@@ -6,6 +6,7 @@
 #include "RemoteCtrl.h"
 #include "ServerSocket.h"
 #include <direct.h>
+#include <atlimage.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -258,6 +259,39 @@ int MouseEvent() {
     return 0;
 }
 
+int SendScreen()
+{
+    CImage screen; // GDI+
+    HDC hScreen = GetDC(NULL);
+    int nBitPerPixel = GetDeviceCaps(hScreen, BITSPIXEL); // 24 ARGB8888 32bit RGB888 24bit RGB565 RGB444
+    int nWidth = GetDeviceCaps(hScreen, HORZRES);
+    int nHeight = GetDeviceCaps(hScreen, VERTRES);
+
+    screen.Create(nWidth, nHeight, nBitPerPixel);
+    BitBlt(screen.GetDC(), 0, 0, nWidth, nHeight, hScreen, 0, 0, SRCCOPY);
+    ReleaseDC(NULL, hScreen);
+    HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, 0);
+    if (hMem == NULL) return -1;
+    IStream* pStream = NULL;
+    HRESULT ret = CreateStreamOnHGlobal(hMem, TRUE, &pStream);
+    if (ret == S_OK) {
+        screen.Save(pStream, Gdiplus::ImageFormatPNG);
+        LARGE_INTEGER bg = { 0 };
+        pStream->Seek(bg, STREAM_SEEK_SET, NULL);
+
+        PBYTE pData = (PBYTE)GlobalLock(hMem);
+        SIZE_T nSize = GlobalSize(hMem);
+        CPacket pack(6, pData, nSize);
+        CServerSocket::getInstance()->Send(pack);
+        GlobalUnlock(hMem);
+    }
+    
+    pStream->Release();
+    GlobalFree(hMem);
+    screen.ReleaseDC();
+    return 0;
+}
+
 int main()
 {
     int nRetCode = 0;
@@ -294,7 +328,7 @@ int main()
             //    int ret = pserver->DealCommand();
             //    //TODO:处理命令
             //}
-            int nCmd = 1;
+            int nCmd = 6;
             switch (nCmd) {
             case 1://查看磁盘分区
                 MakeDriverInfo();
@@ -310,6 +344,9 @@ int main()
                 break;
             case 5://鼠标操作
                 MouseEvent();
+                break;
+            case 6: //发送屏幕内容->发送屏幕截图
+                SendScreen();
                 break;
             }
 
