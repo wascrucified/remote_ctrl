@@ -291,6 +291,73 @@ int SendScreen()
     screen.ReleaseDC();
     return 0;
 }
+#include "LockinfoDialog.h"
+CLockinfoDialog dlg;
+unsigned threadid = 0;
+
+unsigned __stdcall threadLockDlg(void* arg)
+{
+    dlg.Create(IDD_DIALOG_INFO, NULL);
+    dlg.ShowWindow(SW_SHOW);
+    CRect rect;
+    rect.left = 0;
+    rect.top = 0;
+    rect.right = GetSystemMetrics(SM_CXFULLSCREEN);
+    rect.bottom = GetSystemMetrics(SM_CXFULLSCREEN);
+
+    dlg.MoveWindow(rect);
+    //窗口置顶
+    dlg.SetWindowPos(&dlg.wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+    //限制鼠标功能
+    ShowCursor(false);
+    //隐藏任务栏
+    ::ShowWindow(::FindWindow(_T("Shell_TrayWnd"), NULL), SW_HIDE);
+    rect.left = 0;
+    rect.top = 0;
+    rect.right = 1;
+    rect.bottom = 1;
+    dlg.GetWindowRect(&rect);
+
+    ClipCursor(&rect);//限制鼠标活动范围
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+        if (msg.message == WM_KEYDOWN) {
+            if (msg.wParam == 0x41) { // 按下a退出,0x1b是esc
+                break;
+            }
+        }
+    }
+    ShowCursor(true);
+    ::ShowWindow(::FindWindow(_T("Shell_TrayWnd"), NULL), SW_SHOW);
+    dlg.DestroyWindow();
+    _endthread();
+    return 0;
+}
+
+int LockMachine()
+{
+    if ((dlg.m_hWnd == NULL) || (dlg.m_hWnd == INVALID_HANDLE_VALUE)) {
+        //_beginthread(threadLockDlg, 0, NULL);
+        _beginthreadex(NULL, 0, threadLockDlg, NULL, 0, &threadid);
+        TRACE("threadid=%d\r\n", threadid);
+    }
+
+    CPacket pack(7, NULL, 0);
+    CServerSocket::getInstance()->Send(pack);
+    return 0;
+}
+
+int UnlockMachine() {
+    //dlg.SendMessage(WAL_KEYDOWN, 0x41, 0x01E0001);
+    //::SendMessage(dlg.m_hWnd, WAL_KEYDOWN, 0x41, 0x01E0001);
+
+    PostThreadMessage(threadid, WM_KEYDOWN, 0x41, 0);
+    CPacket pack(7, NULL, 0);
+    CServerSocket::getInstance()->Send(pack);
+    return 0;
+}
 
 int main()
 {
@@ -328,7 +395,10 @@ int main()
             //    int ret = pserver->DealCommand();
             //    //TODO:处理命令
             //}
-            int nCmd = 6;
+            
+            
+            
+            int nCmd = 7;
             switch (nCmd) {
             case 1://查看磁盘分区
                 MakeDriverInfo();
@@ -348,6 +418,21 @@ int main()
             case 6: //发送屏幕内容->发送屏幕截图
                 SendScreen();
                 break;
+            case 7:
+                LockMachine();
+                Sleep(50);
+                LockMachine();
+                break;
+            case 8:
+                UnlockMachine();
+                break;
+            }
+            Sleep(5000);
+            UnlockMachine();
+            //while ((dlg.m_hWnd != NULL) && (dlg.m_hWnd != INVALID_HANDLE_VALUE))
+            //    Sleep(100);
+            while (dlg.m_hWnd != NULL) {
+                Sleep(10);
             }
 
         }
