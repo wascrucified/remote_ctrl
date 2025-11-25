@@ -1,9 +1,9 @@
 ﻿
-// RemoteClientDlg.h: 头文件
+ //RemoteClientDlg.h: 头文件
 //
 
 #pragma once
-
+#include "ClientSocket.h"
 
 // CRemoteClientDlg 对话框
 class CRemoteClientDlg : public CDialogEx
@@ -31,4 +31,7 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+public:
+
+	afx_msg void OnBnClickedBtnTest();
 };
