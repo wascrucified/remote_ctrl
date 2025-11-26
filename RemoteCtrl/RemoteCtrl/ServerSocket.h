@@ -212,19 +212,19 @@ public:
         //send(client, buffer, sizeof(buffer), 0);
 
     }
-#define BUFFERSIZE 4096
+#define BUFFER_SIZE 4096
     int DealCommand() {
         if (m_client == -1) return -1;
-        char* buffer = new char[BUFFERSIZE];
+        char* buffer = new char[BUFFER_SIZE];
         if (buffer == NULL) {
             TRACE("内存不足！\r\n");
             return -2;
         }
-        memset(buffer, 0, BUFFERSIZE);
+        memset(buffer, 0, BUFFER_SIZE);
         size_t index = 0;
         while (true) {
             //得到的长度
-            size_t len = recv(m_client, buffer + index, BUFFERSIZE - index, 0);
+            size_t len = recv(m_client, buffer + index, BUFFER_SIZE - index, 0);
             if (len <= 0) {
                 delete[]buffer;
                 return -1;
@@ -236,7 +236,7 @@ public:
             m_packet = CPacket((BYTE*)buffer, len);
             if (len > 0) {
                 //解析成功
-                memmove(buffer, buffer + len, BUFFERSIZE - len);
+                memmove(buffer, buffer + len, BUFFER_SIZE - len);
                 index -= len;
                 delete[]buffer;
                 return m_packet.sCmd;

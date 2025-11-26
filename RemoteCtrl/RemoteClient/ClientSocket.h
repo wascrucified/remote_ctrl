@@ -211,17 +211,16 @@ public:
     }
 
 
-#define BUFFERSIZE 4096
+#define BUFFER_SIZE 4096
     int DealCommand() {
         if (m_sock == -1) return -1;
         char* buffer = m_buffer.data();
-        memset(buffer, 0, BUFFERSIZE);
+        memset(buffer, 0, BUFFER_SIZE);
         size_t index = 0;
         while (true) {
             //得到的长度
-            size_t len = recv(m_sock, buffer + index, BUFFERSIZE - index, 0);
+            size_t len = recv(m_sock, buffer + index, BUFFER_SIZE - index, 0);
             if (len <= 0) {
-                
                 return -1;
             }
             index += len;
@@ -230,7 +229,7 @@ public:
             m_packet = CPacket((BYTE*)buffer, len);
             if (len > 0) {
                 //解析成功
-                memmove(buffer, buffer + len, BUFFERSIZE - len);
+                memmove(buffer, buffer + len, BUFFER_SIZE - len);
                 index -= len;
 
                 return m_packet.sCmd;
@@ -292,7 +291,7 @@ private:
             MessageBox(NULL, _T("无法初始化套接字环境,请检查网络设置！"), _T("初始化错误！"), MB_OK | MB_ICONERROR);
             exit(0);
         }
-        m_buffer.resize(BUFFERSIZE);
+        m_buffer.resize(BUFFER_SIZE);
     }
 
     // 析构函数 - 清理套接字环境
