@@ -45,10 +45,14 @@ int MakeDriverInfo() {
         }
     }
 
+    if (!result.empty()) {
+        result += ',';
+    }
+
     // 发送驱动器信息包
     CPacket pack(1, (BYTE*)result.c_str(), result.size()); // 用来打包
     Dump((BYTE*)pack.Data(), pack.Size());
-    //CServerSocket::getInstance()->Send(pack);
+    CServerSocket::getInstance()->Send(pack);
     return 0;
 }
 
