@@ -59,19 +59,7 @@ int MakeDriverInfo() {
 #include <io.h>
 #include <list>
 
-typedef struct file_info {
-    file_info() {
-        IsInvalid = FALSE;
-        IsDirectory = -1;
-        HasNext = TRUE;
-        memset(szFileName, 0, sizeof(szFileName));
-    }
 
-    BOOL IsInvalid; // 是否有效
-    BOOL IsDirectory; // 是否为目录 0 否 1 是
-    BOOL HasNext; // 是否还有后续 0 没有 1 有
-    char szFileName[256]; // 文件名
-} FILEINFO, * PFILEINFO;
 
 int MakeDirectoryInfo() {
     std::string strPath;
@@ -82,12 +70,9 @@ int MakeDirectoryInfo() {
     }
     //拿到strPath后，开始切换目录
     if (_chdir(strPath.c_str()) != 0) {
+        //OutputDebugString(strerror(errno));
         FILEINFO finfo;
-        finfo.IsInvalid = TRUE;
-        finfo.IsDirectory = TRUE;
         finfo.HasNext = FALSE;
-        memcpy(finfo.szFileName, strPath.c_str(), strPath.size());
-        //lstFileInfos.push_back(finfo);
         CPacket pack(2, (BYTE*)&finfo, sizeof(finfo));
         CServerSocket::getInstance()->Send(pack);
 
@@ -99,6 +84,10 @@ int MakeDirectoryInfo() {
     intptr_t hfind = 0;
     if ((hfind = _findfirst("*", &fdata)) == -1) {
         OutputDebugString(_T("没有找到任何文件！！"));
+        FILEINFO finfo;
+        finfo.HasNext = FALSE;
+        CPacket pack(2, (BYTE*)&finfo, sizeof(finfo));
+        CServerSocket::getInstance()->Send(pack);
         return -3;
     }
 
@@ -107,7 +96,7 @@ int MakeDirectoryInfo() {
         FILEINFO finfo;
         finfo.IsDirectory = (fdata.attrib & _A_SUBDIR) != 0;
         memcpy(finfo.szFileName, fdata.name, strlen(fdata.name));
-        //lstFileInfos.push_back(finfo);
+        TRACE("%s\r\n", finfo.szFileName);
         CPacket pack(2, (BYTE*)&finfo, sizeof(finfo));
         CServerSocket::getInstance()->Send(pack);
     } while (_findnext(hfind, &fdata) == 0);
