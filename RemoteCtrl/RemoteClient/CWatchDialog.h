@@ -25,4 +25,5 @@ public:
 //	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	virtual BOOL OnInitDialog();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	CStatic m_picture;
 };

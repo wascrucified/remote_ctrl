@@ -30,6 +30,9 @@ public:
 	CImage& GetImage() {
 		return m_image;
 	}
+	void SetImageStatus(bool isFull = false) {
+		m_isFull = isFull;
+	}
 private:
 	CImage m_image; //缓存
 	bool m_isFull;//m_image缓存的标志位，看看缓存内是否有数据

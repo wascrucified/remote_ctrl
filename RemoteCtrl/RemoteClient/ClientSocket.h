@@ -212,7 +212,7 @@ public:
     }
 
 
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 2048000
     int DealCommand() {
         if (m_sock == -1) return -1;
         char* buffer = m_buffer.data();
@@ -224,7 +224,7 @@ public:
             if ((len <= 0) && (index == 0)) {
                 return -1;
             }
-            Dump((BYTE*)buffer, index);
+            //Dump((BYTE*)buffer, index);
             index += len;
             //使用的长度
             len = index;
@@ -233,7 +233,6 @@ public:
                 //解析成功
                 memmove(buffer, buffer + len, index - len);
                 index -= len;
-
                 return m_packet.sCmd;
             }
         }
