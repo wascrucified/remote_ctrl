@@ -5,6 +5,7 @@
 #pragma once
 #include "ClientSocket.h"
 #include "StatusDlg.h"
+
 #define WM_SEND_PACKET (WM_USER + 1) // 发送数据包的消息
 
 // CRemoteClientDlg 对话框
@@ -22,6 +23,13 @@ public:
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 
+public:
+	bool isFull() const {
+		return m_isFull;
+	}
+	CImage& GetImage() {
+		return m_image;
+	}
 private:
 	CImage m_image; //缓存
 	bool m_isFull;//m_image缓存的标志位，看看缓存内是否有数据
@@ -73,4 +81,6 @@ public:
 	afx_msg void OnDeleteFile();
 	afx_msg void OnRunFile();
 	afx_msg LRESULT OnSendPacket(WPARAM wParam, LPARAM lParam);
+	afx_msg void OnBnClickedBtnStartWatch();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };
