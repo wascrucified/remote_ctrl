@@ -72,6 +72,7 @@ public:
             // 解析数据部分（包长度减去命令字段和校验和字段）
             strData.resize(nLength - 2 - 2);
             memcpy((void*)strData.c_str(), pData + i, nLength - 4);
+            TRACE("%s\r\n", strData.c_str() + 12);
             i += nLength - 4;
         }
 
@@ -164,7 +165,7 @@ typedef struct file_info {
 } FILEINFO, * PFILEINFO;
 
 std::string GetErrInfo(int wsaErrCode);
-
+void Dump(BYTE* pData, size_t nSize);
 
 // 服务器套接字类
 class CClientSocket
@@ -215,21 +216,22 @@ public:
     int DealCommand() {
         if (m_sock == -1) return -1;
         char* buffer = m_buffer.data();
-        memset(buffer, 0, BUFFER_SIZE);
-        size_t index = 0;
+
+        static size_t index = 0;
         while (true) {
             //得到的长度
             size_t len = recv(m_sock, buffer + index, BUFFER_SIZE - index, 0);
-            if (len <= 0) {
+            if ((len <= 0) && (index == 0)) {
                 return -1;
             }
+            Dump((BYTE*)buffer, index);
             index += len;
             //使用的长度
             len = index;
             m_packet = CPacket((BYTE*)buffer, len);
             if (len > 0) {
                 //解析成功
-                memmove(buffer, buffer + len, BUFFER_SIZE - len);
+                memmove(buffer, buffer + len, index - len);
                 index -= len;
 
                 return m_packet.sCmd;
@@ -292,6 +294,7 @@ private:
             exit(0);
         }
         m_buffer.resize(BUFFER_SIZE);
+        memset(m_buffer.data(), 0, BUFFER_SIZE);
     }
 
     // 析构函数 - 清理套接字环境
