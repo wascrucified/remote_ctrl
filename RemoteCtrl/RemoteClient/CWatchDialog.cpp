@@ -222,7 +222,7 @@ void CWatchDialog::OnMouseMove(UINT nFlags, CPoint point)
 		// 封装
 		MOUSEEV event;
 		event.ptXY = remote;
-		event.nButton = 0; // 左键
+		event.nButton = 8; // 左键
 		event.nAction = 1; // 移动
 
 		CRemoteClientDlg* pParent = (CRemoteClientDlg*)GetParent(); // 网络通信与对话框有耦合，设计隐患
