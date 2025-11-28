@@ -212,7 +212,7 @@ public:
     }
 
 
-#define BUFFER_SIZE 2048000
+#define BUFFER_SIZE 8192000
     int DealCommand() {
         if (m_sock == -1) return -1;
         char* buffer = m_buffer.data();
