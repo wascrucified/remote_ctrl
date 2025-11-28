@@ -36,6 +36,7 @@ public:
 private:
 	CImage m_image; //缓存
 	bool m_isFull;//m_image缓存的标志位，看看缓存内是否有数据
+	bool m_isClosed; //监视是否关闭
 private:
 	static void threadEntryForWatchData(void* arg);// 静态函数不能使用this指针，成员变量不能访问
 	void threadWatchData();//成员函数可以使用this指针
