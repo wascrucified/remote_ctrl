@@ -307,14 +307,23 @@ unsigned __stdcall threadLockDlg(void* arg)
     dlg.SetWindowPos(&dlg.wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
     //限制鼠标功能
     ShowCursor(false);
+    CWnd* pText = dlg.GetDlgItem(IDC_STATIC);
+    if (pText) {
+        CRect rtText;
+        pText->GetWindowRect(rtText);
+        int nWidth = rtText.Width();
+        int x = (rect.right - nWidth) / 2;
+        int nHeight = rtText.Height();
+        int y = (rect.bottom - nHeight) / 2;
+        pText->MoveWindow(x, y, rtText.Width(), rtText.Height());
+    }
     //隐藏任务栏
     ::ShowWindow(::FindWindow(_T("Shell_TrayWnd"), NULL), SW_HIDE);
+    dlg.GetWindowRect(&rect);
     rect.left = 0;
     rect.top = 0;
     rect.right = 1;
     rect.bottom = 1;
-    dlg.GetWindowRect(&rect);
-
     ClipCursor(&rect);//限制鼠标活动范围
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {
@@ -326,7 +335,10 @@ unsigned __stdcall threadLockDlg(void* arg)
             }
         }
     }
+    ClipCursor(NULL); // 取出对鼠标的限制
+    //恢复鼠标
     ShowCursor(true);
+    //恢复任务栏
     ::ShowWindow(::FindWindow(_T("Shell_TrayWnd"), NULL), SW_SHOW);
     dlg.DestroyWindow();
     _endthread();
@@ -351,7 +363,7 @@ int UnlockMachine() {
     //::SendMessage(dlg.m_hWnd, WAL_KEYDOWN, 0x41, 0x01E0001);
 
     PostThreadMessage(threadid, WM_KEYDOWN, 0x41, 0);
-    CPacket pack(7, NULL, 0);
+    CPacket pack(8, NULL, 0);
     CServerSocket::getInstance()->Send(pack);
     return 0;
 }

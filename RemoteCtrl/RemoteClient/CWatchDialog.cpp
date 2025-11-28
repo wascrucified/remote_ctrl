@@ -40,6 +40,8 @@ ON_WM_RBUTTONDOWN()
 ON_WM_RBUTTONUP()
 ON_WM_MOUSEMOVE()
 ON_STN_CLICKED(IDC_WATCH, &CWatchDialog::OnStnClickedWatch)
+ON_BN_CLICKED(IDC_BTN_LOCK, &CWatchDialog::OnBnClickedBtnLock)
+ON_BN_CLICKED(IDC_BTN_UNLOCK, &CWatchDialog::OnBnClickedBtnUnlock)
 END_MESSAGE_MAP()
 
 
@@ -51,7 +53,7 @@ CPoint CWatchDialog::UserPoint2RemoteScreenPoint(CPoint& point, bool isScreen)
 	if (isScreen) {
 		ScreenToClient(&point); // 全局坐标到客户区域坐标
 	}
-	
+	point.y -= 50;
 	TRACE("x=%d y=%d\r\n", point.x, point.y);
 	// 本地坐标到远程坐标
 	m_picture.GetWindowRect(clientRect);
@@ -108,7 +110,7 @@ void CWatchDialog::OnLButtonDblClk(UINT nFlags, CPoint point)
 		MOUSEEV event;
 		event.ptXY = remote;
 		event.nButton = 0; // 左键
-		event.nAction = 2; // 双击
+		event.nAction = 1; // 双击
 
 		CRemoteClientDlg* pParent = (CRemoteClientDlg*)GetParent();
 		pParent->SendMessage(WM_SEND_PACKET, 5 << 1 | 1, (WPARAM)&event);
@@ -121,7 +123,7 @@ void CWatchDialog::OnLButtonDown(UINT nFlags, CPoint point)
 	if ((m_nObjWidth != -1) && (m_nObjHeight != -1)) {
 		TRACE("x=%d y=%d\r\n", point.x, point.y);
 		CPoint remote = UserPoint2RemoteScreenPoint(point);
-		TRACE("x=%d y=%d\r\n", point.x, point.y);
+		TRACE("x=%d y=%d\r\n", remote.x, remote.y);
 		// 封装
 		MOUSEEV event;
 		event.ptXY = remote;
@@ -222,7 +224,7 @@ void CWatchDialog::OnMouseMove(UINT nFlags, CPoint point)
 		// 封装
 		MOUSEEV event;
 		event.ptXY = remote;
-		event.nButton = 8; // 左键
+		event.nButton = 8; // 无按键
 		event.nAction = 1; // 移动
 
 		CRemoteClientDlg* pParent = (CRemoteClientDlg*)GetParent(); // 网络通信与对话框有耦合，设计隐患
@@ -257,4 +259,16 @@ void CWatchDialog::OnOK()
 	// TODO: 在此添加专用代码和/或调用基类
 
 	//CDialog::OnOK();
+}
+
+void CWatchDialog::OnBnClickedBtnLock()
+{
+	CRemoteClientDlg* pParent = (CRemoteClientDlg*)GetParent();
+	pParent->SendMessage(WM_SEND_PACKET, 7 << 1 | 1);
+}
+
+void CWatchDialog::OnBnClickedBtnUnlock()
+{
+	CRemoteClientDlg* pParent = (CRemoteClientDlg*)GetParent();
+	pParent->SendMessage(WM_SEND_PACKET, 8 << 1 | 1);
 }
